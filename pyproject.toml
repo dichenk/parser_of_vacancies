@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "parser-of-vacancies"
+version = "0.1.0"
+description = ""
+authors = ["dichenk"]
+readme = "README.md"
+packages = [{include = "parser_of_vacancies"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
