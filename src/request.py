@@ -1,4 +1,5 @@
 import classes
+import time
 
 new_elem = vacancy_text = vacancy_salary = vacancy_place_of_work = vacancy_experience = None
 while 1:
@@ -28,9 +29,10 @@ while 1:
     if new_elem.amount_of_vacancies == 0:
         print('\t\t\tНичего не найдено\nПереформулируйте ваш запрос!\n')
         continue
+    
     break
 
-new_elem.find_me_offer(vacancy_salary, vacancy_place_of_work, vacancy_experience)
+new_elem.find_the_offer()
 
 
 

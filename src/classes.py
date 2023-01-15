@@ -2,15 +2,16 @@ import requests
 import os
 import pandas as pd
 from abc import abstractmethod
-import time
 
 class Engine():
+    
     @abstractmethod
     def get_request(self):
         return
-    @staticmethod
-    def get_connector(file_name):
-        pass
+    
+    @abstractmethod
+    def take_info_in_pandas(self):
+        return
 
 class HeadHunter(Engine):
     __link = 'https://api.hh.ru/vacancies'
@@ -18,18 +19,11 @@ class HeadHunter(Engine):
     def __init__(self, nm):
         self.__vacancy = self.__get_request(nm)
         print(self.__vacancy.loc[1]['employer']['name'])
-
     
     def __len__(self):
         return len(self.__vacancy)
 
-#    @property
-#    def vacancy(self):
-#        return self.__vacancy
-
     def __get_request(self, nm):
-        if os.path.isfile('hh_vac.txt'):
-            os.remove('hh_vac.txt')
         params = {
                 'text': nm,
                 'page': 1,
@@ -46,8 +40,11 @@ class HeadHunter(Engine):
             response_items = response_big.loc[:]['items']
             response_small = pd.DataFrame(list(response_items))
             response = pd.concat([response, response_small])
-        response.to_csv('hh_vac.txt', sep=';', index=False)
+        response.to_csv('vac_hh_' + nm + '.txt', sep=';', index=False)
         return response
+
+    def take_info_in_pandas(self):
+        return self.__vacancy
 
 class SuperJob(Engine):
     __link = 'https://api.superjob.ru/2.0/vacancies/'
@@ -56,18 +53,10 @@ class SuperJob(Engine):
         self.__vacancy = self.__get_request(nm)
         print(self.__vacancy.loc[1]['firm_name'])
 
-
-    
     def __len__(self):
         return len(self.__vacancy)
     
-#    @property
-#    def vacancy(self):
-#        return self.__vacancy
-    
     def __get_request(self, nm):
-        if os.path.isfile('sj_vac.txt'):
-            os.remove('sj_vac.txt')
         params = {
                 'keyword': nm,
                 'page': 1,
@@ -90,47 +79,42 @@ class SuperJob(Engine):
             response_items = response_big.loc[:, 'objects']
             response_small = pd.DataFrame(list(response_items))
             response = pd.concat([response, response_small], axis=0)
-        response.to_csv('sj_vac.txt', sep=';' )
+        response.to_csv('vac_sj_' + nm + '.txt', sep=';' )
         return response
+
+    def take_info_in_pandas(self):
+        return self.__vacancy
         
 class Vacancy:
     def __init__(self, vac_name = 'python'):
-        self.__vac_key = vac_name
-        self.__name = []
-        self.__salary = []
-        self.__place_of_work = []
-        self.__experience = []
-        self.__vac_hh = self.__take_from_hh(vac_name)
-        self.printing()
-        self.__vac_sj = self.__take_from_sj(vac_name)
-        self.amount_of_vacancies = len(self.__vac_hh) + len(self.__vac_sj)
+        self.__vac_hh = HeadHunter(vac_name)
+        self.__vac_sj = SuperJob(vac_name)
+        self.amount_of_vacancies = len(self.__vac_hh) + len(self.__vac_sj) 
     
-    def printing(self):
-        for i in range(10):
-            print('.', end='')
-            time.sleep(1)
-            if i == 5:
-                print('да-да, я все еще ищу', end=' ')
-        print()
-    
-    def find_me_offer(self, a, b, c):
-        self.__vac_hh
-        print(a, b, c)
+    def find_the_offer(self):
+        hh_vac = self.__vac_hh.take_info_in_pandas()
+        hh_vac = hh_vac.loc[:, ['name', 'salary', 'alternate_url', 'employer', 'schedule']]
         
-    @staticmethod
-    def __take_from_hh(nm):
-        hh = HeadHunter(nm)
-        return hh
+        hh_vac_sal = pd.json_normalize(hh_vac['salary'])
+        hh_vac_sal.rename(columns = {'from':'payment_from', 'to':'payment_to'}, inplace=True)
+        hh_vac_sal = hh_vac_sal.loc[:, ['payment_from', 'payment_to']]
+        
+        hh_vac_emp = pd.json_normalize(hh_vac['employer'])
+        hh_vac_emp.rename(columns = {'name':'firm_name'}, inplace=True)
+        hh_vac_emp = hh_vac_emp.loc[:, 'firm_name']
 
-    @staticmethod
-    def __take_from_sj(nm):
-        sj = SuperJob(nm)
-        return sj
+        hh_vac_sched = pd.json_normalize(hh_vac['schedule'])
+        hh_vac_sched.rename(columns = {'name':'place_of_work'}, inplace=True)
+        hh_vac_sched = hh_vac_sched.loc[:, 'place_of_work']
     
-    def __repr__(self):
-        #return f'name: {self.__name}\nlnk: {self.__link},\nabout: {self.__about},\nsalary: {self.__salary}'
-        return str(len(self.__whatever) + len(self.__whatever2))
+        hh_vac = hh_vac.loc[:, ['name', 'alternate_url']]
+        hh_vac = pd.concat([hh_vac, hh_vac_sched, hh_vac_sal, hh_vac_emp], axis=1)
+#        print(hh_vac.loc[hh_vac['place_of_work'] == 'Удаленная работа'])
 
-#    @property
-#    def name(self, nm):
-#        self.__name = nm
+        sj_vac = self.__vac_sj.take_info_in_pandas()
+        print(sj_vac.columns)
+
+
+
+    def __repr__(self):
+        return str('kokoko')
