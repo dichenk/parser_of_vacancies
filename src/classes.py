@@ -1,5 +1,5 @@
 import requests
-import os
+#import os
 import pandas as pd
 from abc import abstractmethod
 
@@ -15,10 +15,9 @@ class Engine():
 
 class HeadHunter(Engine):
     __link = 'https://api.hh.ru/vacancies'
-
     def __init__(self, nm):
+
         self.__vacancy = self.__get_request(nm)
-        print(self.__vacancy.loc[1]['employer']['name'])
     
     def __len__(self):
         return len(self.__vacancy)
@@ -30,7 +29,7 @@ class HeadHunter(Engine):
                 'per_page': 100
                 }
         response = pd.DataFrame()
-        for i in range(1):
+        for i in range(5):
             params['page'] = i
             try:
                 response_big = requests.get(self.__link, params).json()
@@ -39,7 +38,7 @@ class HeadHunter(Engine):
             response_big = pd.DataFrame.from_dict(response_big)
             response_items = response_big.loc[:]['items']
             response_small = pd.DataFrame(list(response_items))
-            response = pd.concat([response, response_small])
+            response = pd.concat([response, response_small], ignore_index=True)
         response.to_csv('vac_hh_' + nm + '.txt', sep=';', index=False)
         return response
 
@@ -51,7 +50,6 @@ class SuperJob(Engine):
 
     def __init__(self, nm):
         self.__vacancy = self.__get_request(nm)
-        print(self.__vacancy.loc[1]['firm_name'])
 
     def __len__(self):
         return len(self.__vacancy)
@@ -69,7 +67,7 @@ class SuperJob(Engine):
                 'Content-Type': 'application/x-www-form-urlencoded'
                 }
         response = pd.DataFrame()
-        for i in range(1):
+        for i in range(5):
             params['page'] = i
             try:
                 response_big = requests.get(self.__link, headers=headers, params=params).json()
@@ -109,12 +107,17 @@ class Vacancy:
     
         hh_vac = hh_vac.loc[:, ['name', 'alternate_url']]
         hh_vac = pd.concat([hh_vac, hh_vac_sched, hh_vac_sal, hh_vac_emp], axis=1)
-#        print(hh_vac.loc[hh_vac['place_of_work'] == 'Удаленная работа'])
+        hh_vac.rename(columns = {'name':'profession', 'alternate_url':'link'}, inplace=True)
 
         sj_vac = self.__vac_sj.take_info_in_pandas()
-        print(sj_vac.columns)
 
+        sj_vac_place = pd.json_normalize(sj_vac['place_of_work'])
+        sj_vac_place.rename(columns = {'title':'place_of_work'}, inplace=True)
 
+        sj_vac = sj_vac.loc[:, ['profession', 'link', 'payment_from', 'payment_to', 'firm_name']]
+        sj_vac.insert(2, 'place_of_work', list(sj_vac_place.loc[:, 'place_of_work']))
 
-    def __repr__(self):
-        return str('kokoko')
+        result_vac = pd.concat([hh_vac, sj_vac], ignore_index=True)
+        print(len(result_vac))
+        result_vac['place_of_work'] = result_vac['place_of_work'].replace(['Удалённая работа (на дому)'], 'Удаленная работа')
+
