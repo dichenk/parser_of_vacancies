@@ -16,7 +16,6 @@ class Engine():
 class HeadHunter(Engine):
     __link = 'https://api.hh.ru/vacancies'
     def __init__(self, nm):
-
         self.__vacancy = self.__get_request(nm)
     
     def __len__(self):
@@ -29,6 +28,8 @@ class HeadHunter(Engine):
                 'per_page': 100
                 }
         response = pd.DataFrame()
+
+        '''собираем 500 вакансий'''
         for i in range(5):
             params['page'] = i
             try:
@@ -36,6 +37,7 @@ class HeadHunter(Engine):
             except:
                 continue
             response_big = pd.DataFrame.from_dict(response_big)
+            '''достаем слой с данными (на первом их не оказалось)'''
             response_items = response_big.loc[:]['items']
             response_small = pd.DataFrame(list(response_items))
             response = pd.concat([response, response_small], ignore_index=True)
@@ -73,6 +75,8 @@ class SuperJob(Engine):
                 response_big = requests.get(self.__link, headers=headers, params=params).json()
             except:
                 continue
+
+            '''причесываем данные'''
             response_big = pd.DataFrame.from_dict(response_big)
             response_items = response_big.loc[:, 'objects']
             response_small = pd.DataFrame(list(response_items))
@@ -88,7 +92,7 @@ class Vacancy:
         self.__vac_hh = HeadHunter(vac_name)
         self.__vac_sj = SuperJob(vac_name)
         self.amount_of_vacancies = len(self.__vac_hh) + len(self.__vac_sj) 
-    
+   
     def find_the_offer(self, place_of_work, vacancy_salary):
         hh_vac = self.__vac_hh.take_info_in_pandas()
         hh_vac = hh_vac.loc[:, ['name', 'salary', 'alternate_url', 'employer', 'schedule']]
@@ -120,11 +124,11 @@ class Vacancy:
         result_vac = pd.concat([hh_vac, sj_vac], ignore_index=True)
         result_vac['place_of_work'] = result_vac['place_of_work'].replace(['Удалённая работа (на дому)'], 'Удаленная работа')
         
+        '''фильтрация и обработка результата'''
         if place_of_work == 'да':
             result_vac = result_vac.loc[result_vac['place_of_work'] == 'Удаленная работа']
         
         result_vac = result_vac.loc[result_vac['payment_from'] > vacancy_salary]
-        print(len(result_vac))
 
         result_vac.sort_values(by=['payment_from'], inplace=True, ascending=True)
         if len(result_vac) > 10:
@@ -137,5 +141,3 @@ class Vacancy:
         else: 
             print('По таким параметрам не удалось найти что-то')
         print(result_vac)
-
-
