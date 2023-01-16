@@ -1,5 +1,4 @@
 import classes
-import time
 
 new_elem = vacancy_text = vacancy_salary = vacancy_place_of_work = vacancy_experience = None
 while 1:
@@ -16,23 +15,11 @@ while 1:
         vacancy_place_of_work = input('удаленка?\nВведите да или нет: ')
         if vacancy_place_of_work in ['да', 'нет']:
             break
-    while 1:
-        vacancy_experience = input('опыт?\nВведите число от 0 до 99: ')
-        try:
-            vacancy_experience = int(vacancy_experience)
-            if 0 < vacancy_experience < 100:
-                break
-        except:
-            pass
 
     new_elem = classes.Vacancy(vacancy_text)
     if new_elem.amount_of_vacancies == 0:
         print('\t\t\tНичего не найдено\nПереформулируйте ваш запрос!\n')
         continue
-    
     break
 
-new_elem.find_the_offer()
-
-
-
+new_elem.find_the_offer(vacancy_place_of_work, vacancy_salary)

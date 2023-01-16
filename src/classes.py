@@ -89,7 +89,7 @@ class Vacancy:
         self.__vac_sj = SuperJob(vac_name)
         self.amount_of_vacancies = len(self.__vac_hh) + len(self.__vac_sj) 
     
-    def find_the_offer(self):
+    def find_the_offer(self, place_of_work, vacancy_salary):
         hh_vac = self.__vac_hh.take_info_in_pandas()
         hh_vac = hh_vac.loc[:, ['name', 'salary', 'alternate_url', 'employer', 'schedule']]
         
@@ -118,6 +118,24 @@ class Vacancy:
         sj_vac.insert(2, 'place_of_work', list(sj_vac_place.loc[:, 'place_of_work']))
 
         result_vac = pd.concat([hh_vac, sj_vac], ignore_index=True)
-        print(len(result_vac))
         result_vac['place_of_work'] = result_vac['place_of_work'].replace(['Удалённая работа (на дому)'], 'Удаленная работа')
+        
+        if place_of_work == 'да':
+            result_vac = result_vac.loc[result_vac['place_of_work'] == 'Удаленная работа']
+        
+        result_vac = result_vac.loc[result_vac['payment_from'] > vacancy_salary]
+        print(len(result_vac))
+
+        result_vac.sort_values(by=['payment_from'], inplace=True, ascending=True)
+        if len(result_vac) > 10:
+            print(f'Я нашел для тебя {len(result_vac)} вакансий. Посмотри некоторые из них в файле result.txt')
+            result_vac = result_vac.iloc[0:9]
+            result_vac.to_csv('result.txt', sep=';' )
+        elif len(result_vac) > 0:
+            print(f'Я нашел для тебя несколько вакансий. Посмотри их в файле result.txt')
+            result_vac.to_csv('result.txt', sep=';' )
+        else: 
+            print('По таким параметрам не удалось найти что-то')
+        print(result_vac)
+
 
